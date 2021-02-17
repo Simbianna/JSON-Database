@@ -1,11 +1,11 @@
-package tasks;
+package tasks.task1;
 
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Task1 {
+public class Server {
 
     // private static List<String> database = new ArrayList<>(100);
 
