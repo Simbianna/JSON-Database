@@ -1,4 +1,4 @@
-package tasks.task3;
+package tasks.task3.util;
 
 import com.beust.jcommander.Parameter;
 
