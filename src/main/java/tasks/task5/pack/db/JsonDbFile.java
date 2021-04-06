@@ -19,7 +19,7 @@ import static tasks.task4.pack.util.MessageProcessor.getJsonFromObject;
 
 public class JsonDbFile {
     private File file;
-    private final String defaultPath = "/db.json";
+    private final String defaultPath = "/data/db.json";
    private static ReadWriteLock lock = new ReentrantReadWriteLock();
    private static Lock readLock = lock.readLock();
     Lock writeLock = lock.writeLock();
@@ -33,17 +33,15 @@ public class JsonDbFile {
     public String set(String key, String value) {
         DbResponse dBResponse;
         Set<DbEntity> fileData = getEntitiesSetFromFile(file.getAbsolutePath());
+        DbEntity entity = checkEntityExists(fileData, key);
+        if (entity != null){
+            fileData.remove(entity);
+        }
         fileData.add(new DbEntity(key, value));
         updateFile(getJsonStringFromEntitiesSet(fileData));
         dBResponse = new OKEmptyResponse();
 
         return getJsonFromObject(dBResponse);
-        /*if (entity != null) {
-            fileData.add(new DbEntity(key, value));
-            updateFile(getJsonStringFromEntitiesSet(fileData));
-            dBResponse = new OKEmptyResponse();
-        } else dBResponse = new ErrorResponse("Database id full");*/
-
     }
 
     public String get(String key) {
@@ -87,7 +85,7 @@ public class JsonDbFile {
         return getJsonFromObject(new ErrorResponse(errorMsg));
     }
 
-    private static String readFileToString(String filename) {
+    private static String   readFileToString(String filename) {
         readLock.lock();
         String result = "";
         try {

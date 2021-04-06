@@ -8,9 +8,7 @@ import tasks.task5.pack.util.MessageProcessor;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -21,6 +19,7 @@ public class Server {
     private String address;
     private int port;
     private JsonDbFile database;
+    private static final String dbFileAddress = System.getProperty("user.dir") + "/src/main/java/tasks/task5/server/data/db.json";
 
     public Server(String address, int port, JsonDbFile database) {
         this.address = address;
@@ -29,7 +28,7 @@ public class Server {
     }
 
     public static Server createDefaultServer() {
-        return new Server("127.0.0.1", 23456, new JsonDbFile("/db.json"));
+        return new Server("127.0.0.1", 23456, new JsonDbFile(dbFileAddress));
     }
 
     public String getAddress() {
@@ -52,19 +51,69 @@ public class Server {
         this.database = database;
     }
 
+
     public void run() {
 
-        try (ServerSocket serverSocket = new ServerSocket(port, 50, InetAddress.getByName(address))) {
+        try /*(ServerSocket serverSocket = new ServerSocket(port, 50, InetAddress.getByName(address)))*/ {
+            ServerSocket serverSocket = new ServerSocket(port, 50, InetAddress.getByName(address));
             System.out.println("Server started!");
-            ExecutorService executor = Executors.newFixedThreadPool(4);
-            boolean marker = true;
+            ExecutorService executor = Executors.newSingleThreadExecutor();
 
-            while (true) {
+            while (!serverSocket.isClosed()) {
+
+                try {
+                    Socket socket = serverSocket.accept();
+                    DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+                    DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+
+                    executor.submit(() -> {
+                                try {
+                                    String msg = inputStream.readUTF();
+                                    ConsoleEntity data = MessageProcessor.getConsoleEntityFromJson(msg);
+
+                                    String response = processConsoleEntity(data, database);
+
+                                    outputStream.writeUTF(response);
+
+                                    outputStream.flush();
+
+                                    if (data.getType() == CommandType.EXIT) {
+                                        executor.shutdown();
+                                        serverSocket.close();
+                                    }
+
+                                } catch (IOException ioe) {
+                                    ioe.printStackTrace();
+                                }
+                            }
+
+                    );
+
+                }catch (SocketException se){
+
+                }
+                catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+            }
+
+        } catch (IOException uhe) {
+            uhe.printStackTrace();
+        }
+
+    }
+}
+
+
+/*
+
                 executor.submit(() -> {
-                    try (Socket socket = serverSocket.accept();
+                    try *//*(Socket socket = serverSocket.accept();
                          DataInputStream inputStream = new DataInputStream(socket.getInputStream());
-                         DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())) {
-
+                         DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream()))*//* {
+                        Socket socket = serverSocket.accept();
+                        DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+                        DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
                         String msg = inputStream.readUTF();
                         ConsoleEntity data = MessageProcessor.getConsoleEntityFromJson(msg);
 
@@ -72,17 +121,24 @@ public class Server {
 
                         outputStream.writeUTF(response);
 
-                       // outputStream.flush();
+                        outputStream.flush();
 
                         if (data.getType() == CommandType.EXIT) {
-                            executor.shutdown();
+                            executor.shutdownNow();
+
+                           // executor.shutdown();
                         }
+                        outputStream.close();
+                        inputStream.close();
+                        socket.close();
+
 
                     } catch (IOException ioException) {
                         ioException.printStackTrace();
                     }
                 });
                 if (executor.isShutdown()) {
+                    serverSocket.close();
                     break;
                 }
             }
@@ -90,5 +146,4 @@ public class Server {
         } catch (IOException ioException) {
             ioException.printStackTrace();
         }
-    }
-}
+    }*/

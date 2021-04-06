@@ -4,16 +4,15 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import tasks.task5.pack.command.CommandType;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class MessageProcessor {
+    private static final String clientFilesPath = System.getProperty("user.dir") + "/src/main/java/tasks/task5/client/data/";
 
     public static ConsoleEntity getConsoleEntityFromJson(String json) {
         ConsoleEntity result = ConsoleEntity.getUnknownConsoleEntity();
@@ -38,17 +37,17 @@ public class MessageProcessor {
 
     public static String getJsonFromArgsEntity(ArgsEntity argsEntity) {
         Gson gson = new Gson();
-        String result = "";
+        String result;
 
         if (argsEntity.getFile() != null) {
             try {
-                Path path = Paths.get(argsEntity.getFile());
+                Path path = Paths.get(clientFilesPath + argsEntity.getFile());
                 byte[] buff = Files.readAllBytes(path);
-               result = new String(buff);
+                result = new String(buff);
             } catch (IOException ioException) {
-                return result;
+                return "";
             }
-        } else  result = gson.toJson(argsEntity);
+        } else result = gson.toJson(argsEntity);
         return result;
     }
 

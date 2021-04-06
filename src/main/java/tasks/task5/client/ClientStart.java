@@ -15,7 +15,6 @@ public class ClientStart {
                 .build()
                 .parse(args);
 
-
         Client client = Client.getDefaultClient();
         client.run(argsEntity);
     }

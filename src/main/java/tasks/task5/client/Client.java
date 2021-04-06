@@ -24,16 +24,11 @@ public class Client {
     }
 
     public void run(ArgsEntity argsEntity) {
-        Socket socket;
-        DataInputStream inputStream;
-        DataOutputStream outputStream;
-        try /*(Socket socket = new Socket(InetAddress.getByName(serverAddress), serverPort);
+
+        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), serverPort);
              DataInputStream inputStream = new DataInputStream(socket.getInputStream());
              DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())
-        ) */ {
-            socket = new Socket(InetAddress.getByName(serverAddress), serverPort);
-            inputStream = new DataInputStream(socket.getInputStream());
-            outputStream = new DataOutputStream(socket.getOutputStream());
+        )  {
 
             System.out.println("Client started!");
 
@@ -43,23 +38,8 @@ public class Client {
 
             System.out.println("Sent: " + msg);
 
-         //   String received = "";
+            System.out.println("Received: " + inputStream.readUTF());
 
-        /*    while (inputStream.available() > 0){
-                received = inputStream.readUTF();
-            }*/
-
-        String   received = inputStream.readUTF();
-
-           /* while (inputStream.available() > 0) {
-                 received = inputStream.readUTF();
-                System.out.println("Received: " + received);
-            }*/
-
-            System.out.println("Received: " + received);
-            outputStream.close();
-            inputStream.close();
-            socket.close();
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -80,6 +60,5 @@ public class Client {
     public void setServerPort(int serverPort) {
         this.serverPort = serverPort;
     }
-
 
 }
