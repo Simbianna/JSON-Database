@@ -1,6 +1,7 @@
 package tasks.task4.pack.util;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import tasks.task4.pack.command.CommandType;
 
@@ -32,8 +33,9 @@ public class MessageProcessor {
 
     public static String getJsonFromObject(Object object) {
         Gson gson = new Gson();
-        return gson.toJson(object);
+        return gson.toJson(object).replace("\\\"", "\"");
     }
+
 
 
    /*public static ConsoleEntity getConsoleEntityFromMainArgs(MainArgs args) {

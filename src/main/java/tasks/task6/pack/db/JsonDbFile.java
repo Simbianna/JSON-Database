@@ -31,16 +31,61 @@ public class JsonDbFile {
         } else file = new File(defaultPath);
     }
 
-    private void updateElement(JsonObject objectToUpdate, List<String> levels, JsonElement value) {
-        JsonElement element;
+    private void updateElement(JsonArray jsonArray, List<String> levels, JsonElement value) {
+        JsonObject object;
+        boolean added = false;
 
-        for (int i = 0; i < levels.size(); i++) {
-            element = objectToUpdate.get(levels.get(i));
-            if (i == levels.size() - 1 || element == null) {
-                objectToUpdate.add(levels.get(0), value);
-                break;
+        if (jsonArray != null) {
+
+            for (int i = 0; i < jsonArray.size(); i++) {
+                object = jsonArray.get(i).getAsJsonObject();
+                if (object.has(levels.get(0))) {
+                    if (levels.size() == 1) {
+                        object.add(levels.get(0), value);
+                        added = true;
+                        break;
+                    }
+               //     object = object.get(levels.get(1)).getAsJsonObject();
+                    for (int j = 1; j < levels.size(); j++) {
+
+                        if (object.has(levels.get(j))) {
+                            object = object.getAsJsonObject(levels.get(j));
+                        } else {
+
+                            for (int k = j; k < levels.size(); k++) {
+                                if (j == levels.size() - 1) {
+                                    object.add(levels.get(j), value);
+                                    added = true;
+                                } else if (object.has(levels.get(j))) {
+                                    object = object.get(levels.get(i)).getAsJsonObject();
+                                } else {
+                                    object.add(levels.get(j), new JsonObject());
+                                    object = object.get(levels.get(j)).getAsJsonObject();
+                                }
+
+                            }
+
+                        }
+                    }
+                }
+                if (added) break;
+            }
+            if (!added) {
+                addNewElement(jsonArray, levels, value);
             }
         }
+
+    }
+
+    private void addNewElement(JsonArray jsonArray, List<String> levels, JsonElement element) {
+        JsonObject object = new JsonObject();
+
+        for (int i = 0; i < levels.size(); i++) {
+            if (i == levels.size() - 1) {
+                object.add(levels.get(i), element);
+            } else object.add(levels.get(i), new JsonObject());
+        }
+        jsonArray.add(object);
     }
 
     private JsonElement findElement(JsonArray jsonArray, List<String> levels) {
@@ -57,7 +102,7 @@ public class JsonDbFile {
                     break;
                 } else if (i == levels.size() - 1) {
                     result = innerElement;
-                }
+                } else object = innerElement.getAsJsonObject();
             }
         }
         return result;
@@ -70,10 +115,11 @@ public class JsonDbFile {
         boolean result = false;
 
         for (JsonElement element : jsonArray) {
-
             object = element.getAsJsonObject();
+
             for (int i = 0; i < levels.size(); i++) {
                 innerElement = object.get(levels.get(i));
+
                 if (innerElement == null) {
                     break;
                 } else if (i == levels.size() - 1) {
@@ -92,12 +138,7 @@ public class JsonDbFile {
         DbResponse dBResponse;
         JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
 
-        for (JsonElement element : jsonArray) {
-            if (element.getAsJsonObject().has(getKeyPath(request.getKey()).get(0))) {
-                updateElement(element.getAsJsonObject(), getKeyPath(request.getKey()), request.getValue());
-                break;
-            }
-        }
+        updateElement(jsonArray, getKeyPath(request.getKey()), request.getValue());
 
         writeJsonArrayToFile(file.getAbsolutePath(), jsonArray);
         dBResponse = new OKEmptyResponse();
@@ -111,7 +152,7 @@ public class JsonDbFile {
 
         if (result instanceof JsonNull) dBResponse = new ErrorResponse("No such key");
         else {
-            String value = result.toString();
+            String value = result.toString().replace("\\", "");
             dBResponse = new OKValueResponse(value);
         }
         return getJsonFromObject(dBResponse);
@@ -172,16 +213,17 @@ public class JsonDbFile {
 
     }
 
-    private List<String> getKeyPath(String key){
+    private List<String> getKeyPath(JsonElement key) {
+        String line = key.toString();
         List<String> result;
-        if (key.endsWith("]")){
-            result = Arrays.asList(key
-                    .replaceAll("\"", "" )
+
+        result = Arrays.asList(line
+                .replaceAll("[\"\\[\\]]", "").split(","));
+            /*result = Arrays.asList(line
+                    .replaceAll("\"", "")
                     .replaceAll("]", "")
                     .replaceAll("\\[", "")
-                    .split(" "));
-        }
-        else result = Arrays.asList(key.split(" "));
+                    .split(" "));*/
         return result;
     }
 }

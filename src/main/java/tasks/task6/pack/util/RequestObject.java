@@ -5,10 +5,10 @@ import com.google.gson.JsonElement;
 
 public class RequestObject {
     private String type;
-    private String key;
+    private JsonElement key;
     private JsonElement value;
 
-    public RequestObject(String type, String key, JsonElement value) {
+    public RequestObject(String type, JsonElement key, JsonElement value) {
         this.type = type;
         this.key = key;
         this.value = value;
@@ -18,7 +18,7 @@ public class RequestObject {
         return type;
     }
 
-    public String getKey() {
+    public JsonElement getKey() {
         return key;
     }
 
