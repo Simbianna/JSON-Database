@@ -73,7 +73,6 @@ public class Server {
                     System.out.println(request);
 
                     String response = processRequestObject(request, database);
-                    System.out.println(response);
 
                     outputStream.writeUTF(response);
 

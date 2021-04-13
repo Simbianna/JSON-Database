@@ -16,7 +16,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static tasks.task4.pack.util.MessageProcessor.getJsonFromObject;
+import static tasks.task6.pack.util.MessageProcessor.getJsonFromObject;
 
 public class JsonDbFile {
     private File file;
@@ -31,7 +31,7 @@ public class JsonDbFile {
         } else file = new File(defaultPath);
     }
 
-    private void updateElement(JsonArray jsonArray, List<String> levels, JsonElement value) {
+    private void updateElement(JsonArray jsonArray, List<String> pathToElement, JsonElement value) {
         JsonObject object;
         boolean added = false;
 
@@ -39,28 +39,35 @@ public class JsonDbFile {
 
             for (int i = 0; i < jsonArray.size(); i++) {
                 object = jsonArray.get(i).getAsJsonObject();
-                if (object.has(levels.get(0))) {
-                    if (levels.size() == 1) {
-                        object.add(levels.get(0), value);
+
+                if (object.has(pathToElement.get(0))) {
+                    if (pathToElement.size() == 1) {
+                        object.add(pathToElement.get(0), value);
                         added = true;
                         break;
                     }
-               //     object = object.get(levels.get(1)).getAsJsonObject();
-                    for (int j = 1; j < levels.size(); j++) {
+                    object = object.get(pathToElement.get(0)).getAsJsonObject();
+                    for (int j = 1; j < pathToElement.size(); j++) {
 
-                        if (object.has(levels.get(j))) {
-                            object = object.getAsJsonObject(levels.get(j));
+                        if (object.has(pathToElement.get(j))) {
+                            if (j == pathToElement.size() - 1) {
+                                object.add(pathToElement.get(j), value);
+                                added = true;
+                                break;
+                            } else
+                                object = object.get(pathToElement.get(j)).getAsJsonObject();
                         } else {
 
-                            for (int k = j; k < levels.size(); k++) {
-                                if (j == levels.size() - 1) {
-                                    object.add(levels.get(j), value);
+                            for (int k = j; k < pathToElement.size(); k++) {
+                                if (k == pathToElement.size() - 1) {
+                                    object.add(pathToElement.get(k), value);
                                     added = true;
-                                } else if (object.has(levels.get(j))) {
-                                    object = object.get(levels.get(i)).getAsJsonObject();
+                                    break;
+                                } else if (object.has(pathToElement.get(k))) {
+                                    object = object.get(pathToElement.get(k)).getAsJsonObject();
                                 } else {
-                                    object.add(levels.get(j), new JsonObject());
-                                    object = object.get(levels.get(j)).getAsJsonObject();
+                                    object.add(pathToElement.get(k), new JsonObject());
+                                    object = object.get(pathToElement.get(k)).getAsJsonObject();
                                 }
 
                             }
@@ -71,24 +78,24 @@ public class JsonDbFile {
                 if (added) break;
             }
             if (!added) {
-                addNewElement(jsonArray, levels, value);
+                addNewElement(jsonArray, pathToElement, value);
             }
         }
 
     }
 
-    private void addNewElement(JsonArray jsonArray, List<String> levels, JsonElement element) {
+    private void addNewElement(JsonArray jsonArray, List<String> pathToElement, JsonElement element) {
         JsonObject object = new JsonObject();
 
-        for (int i = 0; i < levels.size(); i++) {
-            if (i == levels.size() - 1) {
-                object.add(levels.get(i), element);
-            } else object.add(levels.get(i), new JsonObject());
+        for (int i = 0; i < pathToElement.size(); i++) {
+            if (i == pathToElement.size() - 1) {
+                object.add(pathToElement.get(i), element);
+            } else object.add(pathToElement.get(i), new JsonObject());
         }
         jsonArray.add(object);
     }
 
-    private JsonElement findElement(JsonArray jsonArray, List<String> levels) {
+    private JsonElement findElement(JsonArray jsonArray, List<String> pathToElement) {
         JsonElement result = JsonNull.INSTANCE;
         JsonElement innerElement;
         JsonObject object;
@@ -96,11 +103,11 @@ public class JsonDbFile {
         for (JsonElement element : jsonArray) {
             object = element.getAsJsonObject();
 
-            for (int i = 0; i < levels.size(); i++) {
-                innerElement = object.get(levels.get(i));
+            for (int i = 0; i < pathToElement.size(); i++) {
+                innerElement = object.get(pathToElement.get(i));
                 if (innerElement == null) {
                     break;
-                } else if (i == levels.size() - 1) {
+                } else if (i == pathToElement.size() - 1) {
                     result = innerElement;
                 } else object = innerElement.getAsJsonObject();
             }
@@ -108,7 +115,7 @@ public class JsonDbFile {
         return result;
     }
 
-    private JsonArray removeElement(JsonArray jsonArray, List<String> levels) {
+    private JsonArray getArrayWithoutElement(JsonArray jsonArray, List<String> pathToElement) {
         JsonArray copyArray = jsonArray.deepCopy();
         JsonObject object;
         JsonElement innerElement;
@@ -117,13 +124,13 @@ public class JsonDbFile {
         for (JsonElement element : jsonArray) {
             object = element.getAsJsonObject();
 
-            for (int i = 0; i < levels.size(); i++) {
-                innerElement = object.get(levels.get(i));
+            for (int i = 0; i < pathToElement.size(); i++) {
+                innerElement = object.get(pathToElement.get(i));
 
                 if (innerElement == null) {
                     break;
-                } else if (i == levels.size() - 1) {
-                    object.remove(levels.get(i));
+                } else if (i == pathToElement.size() - 1) {
+                    object.remove(pathToElement.get(i));
                     copyArray.remove(element);
                     jsonArray.add(innerElement);
                     result = true;
@@ -152,7 +159,7 @@ public class JsonDbFile {
 
         if (result instanceof JsonNull) dBResponse = new ErrorResponse("No such key");
         else {
-            String value = result.toString().replace("\\", "");
+            String value = result.toString();
             dBResponse = new OKValueResponse(value);
         }
         return getJsonFromObject(dBResponse);
@@ -161,7 +168,7 @@ public class JsonDbFile {
     public String delete(RequestObject request) {
         DbResponse dBResponse;
         JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
-        JsonArray updatedArray = removeElement(jsonArray, getKeyPath(request.getKey()));
+        JsonArray updatedArray = getArrayWithoutElement(jsonArray, getKeyPath(request.getKey()));
 
         if (updatedArray == null) {
             dBResponse = new ErrorResponse("No such key");

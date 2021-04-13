@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import tasks.task4.pack.command.CommandType;
+import tasks.task6.pack.db.dbResponse.DbResponse;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -33,9 +34,8 @@ public class MessageProcessor {
 
     public static String getJsonFromObject(Object object) {
         Gson gson = new Gson();
-        return gson.toJson(object).replace("\\\"", "\"");
+        return gson.toJson(object);
     }
-
 
 
    /*public static ConsoleEntity getConsoleEntityFromMainArgs(MainArgs args) {

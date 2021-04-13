@@ -62,7 +62,12 @@ public class MessageProcessor {
 
     public static String getJsonFromObject(Object object) {
         Gson gson = new Gson();
-        return gson.toJson(object);
+      //  GsonBuilder builder = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting();
+     //   Gson gson = builder.create();
+        return gson.toJson(object)
+                .replace("\\\"", "\"")
+                .replace("}\"}", "}}")
+                .replace("\":\"{", "\":{"); //.replace("\\", "")  ;//.replace("\\", "");
     }
 
 
