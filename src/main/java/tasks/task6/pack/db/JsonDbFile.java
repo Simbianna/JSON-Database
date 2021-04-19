@@ -31,6 +31,70 @@ public class JsonDbFile {
         } else file = new File(defaultPath);
     }
 
+
+    public String set(RequestObject request) {
+        DbResponse dBResponse;
+        JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
+
+        updateElement(jsonArray, getKeyPath(request.getKey()), request.getValue());
+
+        writeJsonArrayToFile(file.getAbsolutePath(), jsonArray);
+        dBResponse = new OKEmptyResponse();
+        return getJsonFromObject(dBResponse);
+    }
+
+    public String get(RequestObject request) {
+        DbResponse dBResponse;
+        JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
+        JsonElement result = findElement(jsonArray, getKeyPath(request.getKey()));
+
+        if (result instanceof JsonNull) dBResponse = new ErrorResponse("No such key");
+        else {
+            String value = result.toString();
+            dBResponse = new OKValueResponse(value);
+        }
+        return getJsonFromObject(dBResponse);
+    }
+
+    public String delete(RequestObject request) {
+        DbResponse dBResponse;
+        JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
+        List<String> pathToElement = getKeyPath(request.getKey());
+        boolean found = false;
+
+        JsonObject object;
+        JsonElement innerElement;
+
+        for (int i = 0; i < jsonArray.size(); i++) {
+            object = jsonArray.get(i).getAsJsonObject();
+            if (found) break;
+
+            for (int j = 0; j < pathToElement.size(); j++) {
+                innerElement = object.get(pathToElement.get(j));
+                if (innerElement == null) {
+                    break;
+                } else if (j == pathToElement.size() - 1) {
+                    object.remove(pathToElement.get(j));
+                    found = true;
+                } else object = innerElement.getAsJsonObject();
+            }
+        }
+
+        if (!found) {
+            dBResponse = new ErrorResponse("No such key");
+        } else {
+            writeJsonArrayToFile(file.getAbsolutePath(), jsonArray);
+            dBResponse = new OKEmptyResponse();
+        }
+
+        return getJsonFromObject(dBResponse);
+
+    }
+
+    public String exit() {
+        return getJsonFromObject(new OKEmptyResponse());
+    }
+
     private void updateElement(JsonArray jsonArray, List<String> pathToElement, JsonElement value) {
         JsonObject object;
         boolean added = false;
@@ -102,6 +166,7 @@ public class JsonDbFile {
 
         for (JsonElement element : jsonArray) {
             object = element.getAsJsonObject();
+            if (!(result instanceof JsonNull)) break;
 
             for (int i = 0; i < pathToElement.size(); i++) {
                 innerElement = object.get(pathToElement.get(i));
@@ -114,77 +179,6 @@ public class JsonDbFile {
         }
         return result;
     }
-
-    private JsonArray getArrayWithoutElement(JsonArray jsonArray, List<String> pathToElement) {
-        JsonArray copyArray = jsonArray.deepCopy();
-        JsonObject object;
-        JsonElement innerElement;
-        boolean result = false;
-
-        for (JsonElement element : jsonArray) {
-            object = element.getAsJsonObject();
-
-            for (int i = 0; i < pathToElement.size(); i++) {
-                innerElement = object.get(pathToElement.get(i));
-
-                if (innerElement == null) {
-                    break;
-                } else if (i == pathToElement.size() - 1) {
-                    object.remove(pathToElement.get(i));
-                    copyArray.remove(element);
-                    jsonArray.add(innerElement);
-                    result = true;
-                }
-            }
-            if (result) break;
-        }
-        return result ? copyArray : null;
-    }
-
-    public String set(RequestObject request) {
-        DbResponse dBResponse;
-        JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
-
-        updateElement(jsonArray, getKeyPath(request.getKey()), request.getValue());
-
-        writeJsonArrayToFile(file.getAbsolutePath(), jsonArray);
-        dBResponse = new OKEmptyResponse();
-        return getJsonFromObject(dBResponse);
-    }
-
-    public String get(RequestObject request) {
-        DbResponse dBResponse;
-        JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
-        JsonElement result = findElement(jsonArray, getKeyPath(request.getKey()));
-
-        if (result instanceof JsonNull) dBResponse = new ErrorResponse("No such key");
-        else {
-            String value = result.toString();
-            dBResponse = new OKValueResponse(value);
-        }
-        return getJsonFromObject(dBResponse);
-    }
-
-    public String delete(RequestObject request) {
-        DbResponse dBResponse;
-        JsonArray jsonArray = readFileToJsonArray(file.getAbsolutePath());
-        JsonArray updatedArray = getArrayWithoutElement(jsonArray, getKeyPath(request.getKey()));
-
-        if (updatedArray == null) {
-            dBResponse = new ErrorResponse("No such key");
-        } else {
-            writeJsonArrayToFile(file.getAbsolutePath(), updatedArray);
-            dBResponse = new OKEmptyResponse();
-        }
-
-        return getJsonFromObject(dBResponse);
-
-    }
-
-    public String exit() {
-        return getJsonFromObject(new OKEmptyResponse());
-    }
-
 
     public String getError(String errorMsg) {
         return getJsonFromObject(new ErrorResponse(errorMsg));
@@ -226,11 +220,6 @@ public class JsonDbFile {
 
         result = Arrays.asList(line
                 .replaceAll("[\"\\[\\]]", "").split(","));
-            /*result = Arrays.asList(line
-                    .replaceAll("\"", "")
-                    .replaceAll("]", "")
-                    .replaceAll("\\[", "")
-                    .split(" "));*/
         return result;
     }
 }

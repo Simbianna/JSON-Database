@@ -1,6 +1,5 @@
 package tasks.task6.client;
 
-
 import tasks.task6.pack.util.ArgsEntity;
 import tasks.task6.pack.util.MessageProcessor;
 
@@ -24,7 +23,6 @@ public class Client {
     }
 
     public void run(ArgsEntity argsEntity) {
-
         try (Socket socket = new Socket(InetAddress.getByName(serverAddress), serverPort);
              DataInputStream inputStream = new DataInputStream(socket.getInputStream());
              DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())
@@ -41,7 +39,7 @@ public class Client {
             System.out.println("Received: " + inputStream.readUTF());
 
         } catch (IOException ioe) {
-            ioe.printStackTrace();
+               ioe.printStackTrace();
         }
     }
 
@@ -49,16 +47,8 @@ public class Client {
         return serverAddress;
     }
 
-    public void setServerAddress(String serverAddress) {
-        this.serverAddress = serverAddress;
-    }
-
     public int getServerPort() {
         return serverPort;
-    }
-
-    public void setServerPort(int serverPort) {
-        this.serverPort = serverPort;
     }
 
 }
